@@ -1,8 +1,7 @@
 use std::fs::File;
-use std::io::{BufRead, Write, BufReader, BufWriter};
-use flate2::read::GzDecoder;
-use flate2::write::GzEncoder;
-use flate2::Compression;
+use std::io::{BufRead, Write, BufReader};
+use gzp::{deflate::Gzip, ZBuilder};
+use flate2::{read::GzDecoder};
 use clap::{App, Arg};
 use std::collections::HashMap;
 
@@ -31,7 +30,7 @@ fn main() {
     let input_file = File::open(input).expect("Could not open input file");
     let output_file = File::create(output).expect("Could not create output file");
     let input_reader = BufReader::new(GzDecoder::new(input_file));
-    let mut output_writer = BufWriter::new(GzEncoder::new(output_file, Compression::default()));
+    let mut parz = ZBuilder::<Gzip, _>::new().num_threads(0).from_writer(output_file);
 
     let mut score_map = HashMap::new();
     let offset = 33u8;
@@ -40,13 +39,12 @@ fn main() {
     for i in 20..30 {score_map.insert((i + offset) as char, (23 + offset) as char);}
     for i in 30..50 {score_map.insert((i + offset) as char, (37 + offset) as char);}
 
-    let mut num = 0;
-    for line in input_reader.lines() {
+    for (num,line) in input_reader.lines().enumerate() {
         let mut line = line.unwrap();
-        num += 1;
-        if num % 4 == 0 {
+        if (num+1) % 4 == 0 {
             line = line.chars().map(|c| score_map.get(&c).unwrap()).collect();
         }
-        writeln!(output_writer, "{}", line).unwrap();
+        parz.write_all(line.as_bytes()).unwrap();
+        parz.write_all(b"\n").unwrap();
     }
 }

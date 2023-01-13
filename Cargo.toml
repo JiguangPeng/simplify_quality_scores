@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 clap = "3.0"
-flate2 = { version = "1.0.17", features = ["zlib-ng"], default-features = false }
+gzp = "*"
+flate2 = "1.0"
